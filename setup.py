@@ -16,5 +16,5 @@ setup(
     url="https://github.com/WoolDoughnut310/micropython-firebase-firestore",
     long_description=README,
     long_description_content_type="text/markdown",
-    packages=["firebase_firestore"]
+    packages=["ufirestore"]
 )
