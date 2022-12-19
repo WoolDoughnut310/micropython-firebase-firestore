@@ -48,8 +48,7 @@ def send_request(path, method="get", params=dict(), data=None, dump=True):
     if FIREBASE_GLOBAL_VAR.ACCESS_TOKEN:
         headers["Authorization"] = "Bearer " + FIREBASE_GLOBAL_VAR.ACCESS_TOKEN
 
-    response = urequests.request(
-        method, path, params=params, headers=headers, json=data)
+    response = urequests.request(method, path, data=params, json=data, headers=headers)
 
     if dump == True:
         if response.status_code < 200 or response.status_code > 299:
