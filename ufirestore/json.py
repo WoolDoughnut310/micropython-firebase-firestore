@@ -120,9 +120,8 @@ class FirebaseJson:
 
         return self.cursor(path, cb)
 
-    def process(self, name):
+    def process(self):
         return {
-            "name": name,
             "fields": self.data
         }
 

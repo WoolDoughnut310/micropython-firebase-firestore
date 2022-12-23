@@ -1,7 +1,6 @@
 import ujson
-import urequests
 import _thread
-
+import urequests
 
 class FirestoreException(Exception):
     def __init__(self, message, code=400):
@@ -42,38 +41,39 @@ def get_resource_name(url):
     return url[url.find("projects"):]
 
 
-def send_request(path, method="get", params=dict(), data=None, dump=True):
+def send_request(path, method="GET", params=dict(), data=None, dump=True):
     headers = {}
-
     if FIREBASE_GLOBAL_VAR.ACCESS_TOKEN:
         headers["Authorization"] = "Bearer " + FIREBASE_GLOBAL_VAR.ACCESS_TOKEN
-
-    response = urequests.request(
-        method, path, params=params, headers=headers, json=data)
+    if method == "POST":
+        response = urequests.request(method, path, data=None, json=data)
+    else:
+        response = urequests.request(method, path, headers=headers)
 
     if dump == True:
         if response.status_code < 200 or response.status_code > 299:
             print(response.text)
             raise FirestoreException(response.reason, response.status_code)
 
-        json = response.json()
-        if json.get("error"):
+        jsonResponse = response.json()
+        if jsonResponse.get("error"):
             error = json["error"]
             code = error["code"]
             message = error["message"]
             raise FirestoreException(message, code)
-        return json
+        return jsonResponse
 
 
 class INTERNAL:
+
     def patch(DOCUMENT_PATH, DOC, cb, update_mask=None):
         PATH = construct_url(DOCUMENT_PATH)
         LOCAL_PARAMS = to_url_params()
         if update_mask:
             for field in update_mask:
-                LOCAL_PARAMS += "updateMask.fieldPaths=" + field
-        DATA = DOC.process(get_resource_name(PATH))
-        LOCAL_OUTPUT = send_request(PATH+LOCAL_PARAMS, "post", data=DATA)
+                LOCAL_PARAMS += "updateMask=" + field
+        DATA = DOC.process()
+        LOCAL_OUTPUT = send_request(PATH, "POST", data=DATA)
         if cb:
             try:
                 return cb(LOCAL_OUTPUT)
@@ -86,7 +86,7 @@ class INTERNAL:
         PATH = construct_url(COLLECTION_PATH)
         PARAMS = {"documentId": document_id}
         DATA = DOC.process(get_resource_name(PATH))
-        LOCAL_OUTPUT = send_request(PATH, "post", PARAMS, DATA)
+        LOCAL_OUTPUT = send_request(PATH, "POST", PARAMS, DATA)
         if cb:
             try:
                 return cb(LOCAL_OUTPUT)
@@ -101,7 +101,7 @@ class INTERNAL:
         if mask:
             for field in mask:
                 LOCAL_PARAMS += "mask.fieldPaths=" + field
-        LOCAL_OUTPUT = send_request(PATH+LOCAL_PARAMS, "get")
+        LOCAL_OUTPUT = send_request(PATH+LOCAL_PARAMS, "GET")
         if cb:
             try:
                 return cb(LOCAL_OUTPUT)
@@ -167,7 +167,7 @@ class INTERNAL:
             "pageSize": page_size,
             "pageToken": page_token
         }
-        LOCAL_OUTPUT = send_request(PATH, "post", data=DATA)
+        LOCAL_OUTPUT = send_request(PATH, "POST", data=DATA)
         if cb:
             try:
                 return cb(LOCAL_OUTPUT.get("collectionIds"),
@@ -183,7 +183,7 @@ class INTERNAL:
         DATA = {
             "structuredQuery": query.data
         }
-        LOCAL_OUTPUT = send_request(PATH, "post", data=DATA)
+        LOCAL_OUTPUT = send_request(PATH, "POST", data=DATA)
         if cb:
             try:
                 return cb(LOCAL_OUTPUT.get("document"))
@@ -267,3 +267,4 @@ def run_query(PATH, query, bg=True, cb=None):
             INTERNAL.run_query, [PATH, query, cb])
     else:
         return INTERNAL.run_query(PATH, query, cb)
+
